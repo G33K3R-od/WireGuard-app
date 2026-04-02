@@ -48,9 +48,18 @@ The repository already contains placeholder/runtime assets used for local develo
 - `scripts` - helper scripts for runtime setup and patches
 - `tests` - unit tests
 
+## Roadmap
+
+- Improve profile import/export UX and validation feedback
+- Add richer connection diagnostics and health insights
+- Expand test coverage for Electron main-process lifecycle
+- Add CI for typecheck, tests, and Windows build verification
+
 ## Open Source
 
 This project is published under the MIT License. See `LICENSE`.
+
+Contributions are welcome. See `CONTRIBUTING.md`.
 
 ## Security
 
