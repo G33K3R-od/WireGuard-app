@@ -16,6 +16,7 @@ export type I18nKey =
   | "status.error"
   | "connect.title"
   | "connect.desc"
+  | "connect.releasesLink"
   | "connect.currentProfile"
   | "connect.notSelected"
   | "connect.server"
@@ -96,6 +97,7 @@ const dict: Record<UiLanguage, Record<I18nKey, string>> = {
     "status.error": "Ошибка",
     "connect.title": "Подключение",
     "connect.desc": "Выберите профиль и подключитесь к VPN. Статус и диагностика обновляются автоматически.",
+    "connect.releasesLink": "Релизы и установщики на GitHub",
     "connect.currentProfile": "Текущий профиль",
     "connect.notSelected": "Не выбран",
     "connect.server": "Сервер",
@@ -175,6 +177,7 @@ const dict: Record<UiLanguage, Record<I18nKey, string>> = {
     "status.error": "Error",
     "connect.title": "Connection",
     "connect.desc": "Choose a profile and connect to VPN. Status and diagnostics update automatically.",
+    "connect.releasesLink": "Releases and installers on GitHub",
     "connect.currentProfile": "Current profile",
     "connect.notSelected": "Not selected",
     "connect.server": "Server",

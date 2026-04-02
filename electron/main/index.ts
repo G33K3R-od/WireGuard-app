@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage } from "electron";
+import { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, shell } from "electron";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { importConfSchema } from "../shared/schemas";
@@ -54,8 +54,17 @@ const createWindow = async (): Promise<void> => {
   if (process.env.ELECTRON_RENDERER_URL) {
     await mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
   } else {
-    await mainWindow.loadFile(join(__dirname, "../../dist/index.html"));
+    // Production bundle: electron-vite outputs the renderer to out/renderer (not dist/)
+    await mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("https:") || url.startsWith("http:")) {
+      void shell.openExternal(url);
+      return { action: "deny" };
+    }
+    return { action: "deny" };
+  });
 
   mainWindow.on("close", (event) => {
     if (isQuitting) {

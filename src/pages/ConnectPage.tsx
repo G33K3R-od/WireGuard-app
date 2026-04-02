@@ -2,6 +2,7 @@ import type { RuntimePaths } from "../../electron/core/runtimeManager";
 import type { HealthReport, RuntimeState, VpnProfile } from "../../electron/shared/types";
 import type { UiLanguage } from "../i18n";
 import { statusText, t } from "../i18n";
+import { GITHUB_RELEASES_URL } from "../urls";
 
 interface Props {
   lang: UiLanguage;
@@ -23,6 +24,11 @@ export function ConnectPage({ lang, showDebug, state, profile, health, runtimePa
       <header className="page-header">
         <h2 className="page-title">{t(lang, "connect.title")}</h2>
         <p className="page-desc">{t(lang, "connect.desc")}</p>
+        <p className="page-releases muted">
+          <a href={GITHUB_RELEASES_URL} target="_blank" rel="noreferrer">
+            {t(lang, "connect.releasesLink")}
+          </a>
+        </p>
       </header>
 
       <div className="stack">
