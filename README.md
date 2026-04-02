@@ -2,6 +2,10 @@
 
 Open-source Electron + TypeScript desktop client for WireGuard-based connectivity on Windows.
 
+## Download
+
+**Windows installer and release notes:** [github.com/G33K3R-od/WireGuard-app/releases](https://github.com/G33K3R-od/WireGuard-app/releases)
+
 ## Features
 
 - WireGuard profile management
