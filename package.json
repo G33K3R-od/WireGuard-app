@@ -1,11 +1,11 @@
 {
   "name": "wirepn-windows",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "description": "WirePN Windows client",
   "main": "out/main/index.js",
   "author": "WirePN",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
