@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "types": ["node", "electron"],
+    "outDir": "dist-electron"
+  },
+  "include": ["electron/**/*.ts", "scripts/**/*.ts", "electron.vite.config.ts"]
+}
