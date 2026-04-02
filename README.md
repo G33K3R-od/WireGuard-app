@@ -26,6 +26,7 @@ npm run dev
 
 ```bash
 npm run typecheck
+npm run lint
 npm run test
 npm run build
 npm run build:win
@@ -50,16 +51,24 @@ The repository already contains placeholder/runtime assets used for local develo
 
 ## Roadmap
 
-- Improve profile import/export UX and validation feedback
-- Add richer connection diagnostics and health insights
-- Expand test coverage for Electron main-process lifecycle
-- Add CI for typecheck, tests, and Windows build verification
+Short-term priorities for community alignment:
 
-## Open Source
+| Priority | Item |
+| --- | --- |
+| UX | Smoother profile import/export and clearer validation feedback |
+| Diagnostics | Richer connection status, errors, and health-oriented insights |
+| Quality | Broader tests around Electron main-process and preload behavior |
+| Automation | CI for `typecheck`, `lint`, `test`, and Windows build smoke checks |
+
+Items evolve with issues and PRs; pick work from open issues or propose a new one before large changes.
+
+## Contributing
+
+We welcome issues and pull requests. The full workflow (fork, branch, checks, PR) is in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## License
 
 This project is published under the MIT License. See `LICENSE`.
-
-Contributions are welcome. See `CONTRIBUTING.md`.
 
 ## Security
 
