@@ -54,7 +54,8 @@
       "target": [
         "nsis"
       ],
-      "requestedExecutionLevel": "requireAdministrator"
+      "requestedExecutionLevel": "requireAdministrator",
+      "signAndEditExecutable": false
     }
   }
 }

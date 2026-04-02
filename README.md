@@ -32,6 +32,10 @@ npm run build
 npm run build:win
 ```
 
+## Release builds
+
+`npm run build:win` writes installers under `release/`. The project sets `signAndEditExecutable` to `false` so Electron Builder does not run the Windows code-signing toolchain that requires extracting `winCodeSign` (that step can fail on some Windows setups without symlink privileges). Installers are **not** Authenticode-signed unless you add your own certificate and signing configuration.
+
 ## Runtime Binaries
 
 The app expects Windows runtime binaries in `runtime/bin`:
