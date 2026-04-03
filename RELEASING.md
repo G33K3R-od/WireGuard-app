@@ -7,20 +7,20 @@ The single source of truth is **`package.json`** → `"version"` (semver). The s
 ## Steps (maintainer)
 
 1. **Changelog** — Move items from `[Unreleased]` into a dated section `[x.y.z] — YYYY-MM-DD` in `CHANGELOG.md`, or add a short entry for the release.
-2. **Commit** — `git add` + commit with a message like `chore: release 0.2.1`.
+2. **Commit** — `git add` + commit with a message like `chore: release 0.3.0`.
 3. **Tag** — Create an annotated tag matching the version:
 
    ```bash
-   git tag -a v0.2.1 -m "WirePN 0.2.1"
+   git tag -a v0.3.0 -m "WirePN 0.3.0"
    ```
 
-   Tag name **must** start with `v` (e.g. `v0.2.1`) so the **Release** workflow runs.
+   Tag name **must** start with `v` (e.g. `v0.3.0`) so the **Release** workflow runs.
 
 4. **Push** — Push commits and tags:
 
    ```bash
    git push origin main
-   git push origin v0.2.1
+   git push origin v0.3.0
    ```
 
 5. **GitHub Release** — The workflow **Release** (`.github/workflows/release.yml`) builds the Windows NSIS installer on `windows-latest` and uploads:

@@ -4,16 +4,6 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
-## [0.3.1] — 2026-04-03
-
-### Fixed
-
-- **GitHub Releases:** tag `v0.3.1` is intended to ship the **NSIS installer** (`WirePN Setup 0.3.1.exe`) and **`.blockmap`** from CI once the full `main` branch is pushed (fixes missing or empty assets on earlier tags).
-
-### Notes
-
-- No profile or settings migration; replace the app by running the new installer over the previous one.
-
 ## [0.3.0] — 2026-04-03
 
 ### Added
@@ -32,7 +22,13 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- WireGuard UAPI **`get`:** read until `errno=` (IPC socket stays open), so tunnel **statistics** are not lost to timeouts.
 - Settings diagnostics: load **health** even when another IPC call fails; show **Loading…** until data arrives; hint when the main process is an old build without version fields.
+
+### Notes
+
+- **GitHub Releases:** push tag **`v0.3.0`** with **`main`** up to date so CI attaches **`WirePN Setup 0.3.0.exe`** and **`.blockmap`**.
+- No profile or settings migration; install over a previous build to upgrade.
 
 ## [0.2.0] — 2026-04-03
 
