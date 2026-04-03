@@ -2,7 +2,7 @@ import { app, safeStorage } from "electron";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ProfileMode, VpnProfile } from "../shared/types";
-import { parseWireguardConf } from "./confParser";
+import { buildWireguardConfFile, parseWireguardConf } from "./confParser";
 
 interface ProfileDb {
   activeProfileId?: string;
@@ -50,7 +50,11 @@ export class ProfileStore {
   }
 
   importConf(name: string, conf: string): VpnProfile {
-    const parsed = parseWireguardConf(name, conf);
+    const normalizedName = name.trim();
+    if (this.db.profiles.some((p) => p.name.trim().toLowerCase() === normalizedName.toLowerCase())) {
+      throw new Error("WIREPN:duplicate_name");
+    }
+    const parsed = parseWireguardConf(normalizedName, conf);
     const profile: VpnProfile = {
       id: parsed.id,
       name: parsed.name,
@@ -106,5 +110,14 @@ export class ProfileStore {
       this.db.activeProfileId = this.db.profiles[0]?.id;
     }
     this.save();
+  }
+
+  exportConf(profileId: string): string {
+    const profile = this.db.profiles.find((p) => p.id === profileId);
+    if (!profile) {
+      throw new Error("Profile not found");
+    }
+    const priv = this.decrypt(profile.privateKeyEncrypted);
+    return buildWireguardConfFile(profile, priv);
   }
 }

@@ -34,4 +34,29 @@ export interface HealthReport {
   profileCount: number;
   status: TunnelStatus;
   lastError?: string;
+  /** From `app.getVersion()` — same as packaged installer semver. */
+  appVersion: string;
+  electronVersion: string;
+  nodeVersion: string;
+  /** e.g. `win32 x64` */
+  osPlatform: string;
+  runtimeBinDir: string;
+  userDataPath: string;
+}
+
+/** WireGuard UAPI peer transfer + handshake (from `get` on the interface). */
+export interface TunnelStats {
+  rxBytes: number;
+  txBytes: number;
+  /** Unix seconds; 0 = no handshake yet */
+  lastHandshakeSec: number;
+  /** When we transitioned to connected (client-side). */
+  connectedSinceIso?: string;
+}
+
+export interface PingResult {
+  ok: boolean;
+  host: string;
+  ms?: number;
+  error?: string;
 }

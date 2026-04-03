@@ -2,7 +2,7 @@ import { app } from "electron";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ChildProcessWithoutNullStreams, spawn } from "node:child_process";
-import type { HealthReport, RuntimeState, VpnProfile } from "../shared/types";
+import type { HealthReport, PingResult, RuntimeState, TunnelStats } from "../shared/types";
 import { LogStore } from "./logStore";
 import { ProfileStore } from "./profileStore";
 import { SettingsStore } from "./settingsStore";
@@ -11,10 +11,15 @@ import {
   WINTUN_ADMIN_REQUIRED_MESSAGE,
   buildUapiSetBody,
   isWintunAccessDenied,
+  parseUapiGetStats,
+  parseWireguardEndpointHost,
+  uapiGet,
   uapiSet,
   waitForWireGuardUapiPipeWhileProcessRuns
 } from "./wireguardUapi";
+import { pingHostWindows } from "./pingWindows";
 import { cleanupWireGuardTunnelWindows, configureWireGuardTunnelWindows } from "./windowsTunnel";
+import { buildWireguardConfFile } from "./confParser";
 
 export const getRuntimeBinDir = (): string => {
   const base = app.isPackaged ? process.resourcesPath : app.getAppPath();
@@ -36,11 +41,6 @@ export const getRuntimePaths = (): RuntimePaths => {
   };
 };
 
-const renderConf = (profile: VpnProfile, privateKey: string): string => {
-  const dnsLine = profile.dns ? `DNS = ${profile.dns}\n` : "";
-  return `[Interface]\nPrivateKey = ${privateKey}\nAddress = ${profile.address}\n${dnsLine}\n[Peer]\nPublicKey = ${profile.publicKey}\nEndpoint = ${profile.endpoint}\nAllowedIPs = ${profile.allowedIps}\n`;
-};
-
 const POST_CONNECT_CHECK_URLS = [
   "https://connectivitycheck.gstatic.com/generate_204",
   "https://www.msftconnecttest.com/connecttest.txt"
@@ -50,6 +50,9 @@ const MAX_AUTORECONNECT_ATTEMPTS = 30;
 
 export class RuntimeManager {
   private proc?: ChildProcessWithoutNullStreams;
+  /** UAPI pipe used after successful connect (for `get` stats). */
+  private uapiPipePath?: string;
+  private connectedAtIso?: string;
   private stopping = false;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private reconnectAttempts = 0;
@@ -184,7 +187,7 @@ export class RuntimeManager {
     mkdirSync(confDir, { recursive: true });
     const confPath = join(confDir, `${profile.id}.conf`);
     const priv = this.profileStore.decrypt(profile.privateKeyEncrypted);
-    writeFileSync(confPath, renderConf(profile, priv), "utf-8");
+    writeFileSync(confPath, buildWireguardConfFile(profile, priv), "utf-8");
 
     this.proc = spawn(paths.wireguardGo, [WG_TUN_INTERFACE_NAME], {
       windowsHide: true,
@@ -209,6 +212,8 @@ export class RuntimeManager {
         code !== null ? `runtime exited with code ${code}` : `runtime exited by signal ${signal ?? "unknown"}`;
       this.logs.push(this.stopping ? "info" : "warn", exitMsg);
       this.proc = undefined;
+      this.uapiPipePath = undefined;
+      this.connectedAtIso = undefined;
       const wasStopping = this.stopping;
       this.stopping = false;
       if (this.state.status !== "connected") {
@@ -230,6 +235,7 @@ export class RuntimeManager {
         this.proc,
         stderrAcc
       );
+      this.uapiPipePath = uapiPipePath;
       const setBody = buildUapiSetBody(priv, profile.publicKey, profile.endpoint, profile.allowedIps);
       await uapiSet(uapiPipePath, setBody);
       const routeDiag = await configureWireGuardTunnelWindows(WG_TUN_INTERFACE_NAME, profile);
@@ -241,6 +247,8 @@ export class RuntimeManager {
         this.proc.kill();
         this.proc = undefined;
       }
+      this.uapiPipePath = undefined;
+      this.connectedAtIso = undefined;
       const msg = e instanceof Error ? e.message : String(e);
       this.logs.push("error", `runtime setup failed: ${msg}`);
       return this.updateState({ status: "error", profileId: profile.id, message: msg });
@@ -256,6 +264,7 @@ export class RuntimeManager {
     }
 
     this.reconnectAttempts = 0;
+    this.connectedAtIso = new Date().toISOString();
     return this.updateState({
       status: "connected",
       profileId: profile.id,
@@ -268,6 +277,8 @@ export class RuntimeManager {
     if (!this.proc) {
       return this.updateState({ status: "disconnected", message: "Already disconnected" });
     }
+    this.uapiPipePath = undefined;
+    this.connectedAtIso = undefined;
     const activeProfile = this.profileStore.list().find((p) => p.id === this.state.profileId);
     const cleanupOut = await cleanupWireGuardTunnelWindows(WG_TUN_INTERFACE_NAME, activeProfile);
     if (cleanupOut) {
@@ -287,7 +298,50 @@ export class RuntimeManager {
       wintunBinary: existsSync(paths.wintunDll),
       profileCount: this.profileStore.list().length,
       status: this.state.status,
-      lastError: this.state.status === "error" ? this.state.message : undefined
+      lastError: this.state.status === "error" ? this.state.message : undefined,
+      appVersion: app.getVersion(),
+      electronVersion: process.versions.electron ?? "",
+      nodeVersion: process.versions.node ?? "",
+      osPlatform: `${process.platform} ${process.arch}`,
+      runtimeBinDir: paths.binDir,
+      userDataPath: app.getPath("userData")
     };
+  }
+
+  async getTunnelStats(): Promise<TunnelStats | null> {
+    if (!this.proc || this.state.status !== "connected" || !this.uapiPipePath) {
+      return null;
+    }
+    try {
+      const raw = await uapiGet(this.uapiPipePath);
+      const parsed = parseUapiGetStats(raw);
+      if (!parsed) {
+        return null;
+      }
+      return {
+        ...parsed,
+        connectedSinceIso: this.connectedAtIso
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async pingEndpoint(profileId?: string): Promise<PingResult> {
+    const profile = profileId
+      ? this.profileStore.list().find((p) => p.id === profileId)
+      : this.profileStore.getActiveProfile();
+    if (!profile) {
+      return { ok: false, host: "", error: "No profile" };
+    }
+    const host = parseWireguardEndpointHost(profile.endpoint);
+    if (!host) {
+      return { ok: false, host: "", error: "Invalid endpoint" };
+    }
+    if (process.platform !== "win32") {
+      return { ok: false, host, error: "Ping is only supported on Windows" };
+    }
+    const r = await pingHostWindows(host);
+    return r.ok ? { ok: true, host, ms: r.ms } : { ok: false, host, error: r.error };
   }
 }

@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import type { RuntimePaths } from "../../electron/core/runtimeManager";
-import type { HealthReport, RuntimeState, VpnProfile } from "../../electron/shared/types";
+import type { HealthReport, PingResult, RuntimeState, TunnelStats, VpnProfile } from "../../electron/shared/types";
+import { formatBytes, formatConnectedDuration, formatHandshake } from "../connectUi";
 import type { UiLanguage } from "../i18n";
 import { statusText, t } from "../i18n";
 import { GITHUB_RELEASES_URL } from "../urls";
@@ -18,6 +20,48 @@ interface Props {
 export function ConnectPage({ lang, showDebug, state, profile, health, runtimePaths, onConnect, onDisconnect }: Props) {
   const status = state?.status ?? "disconnected";
   const runtimeReady = Boolean(health?.runtimeBinary && health?.wintunBinary);
+  const [stats, setStats] = useState<TunnelStats | null>(null);
+  const [pingResult, setPingResult] = useState<PingResult | null>(null);
+  const [pingBusy, setPingBusy] = useState(false);
+
+  useEffect(() => {
+    if (status !== "connected") {
+      setStats(null);
+      return;
+    }
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const s = await window.wirepn.getTunnelStats();
+        if (!cancelled) {
+          setStats(s);
+        }
+      } catch {
+        if (!cancelled) {
+          setStats(null);
+        }
+      }
+    };
+    void tick();
+    const id = window.setInterval(tick, 2000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [status]);
+
+  const runPing = async () => {
+    setPingBusy(true);
+    setPingResult(null);
+    try {
+      const r = await window.wirepn.pingEndpoint(profile?.id);
+      setPingResult(r);
+    } catch (e) {
+      setPingResult({ ok: false, host: "", error: String(e) });
+    } finally {
+      setPingBusy(false);
+    }
+  };
 
   return (
     <section className="page">
@@ -71,6 +115,13 @@ export function ConnectPage({ lang, showDebug, state, profile, health, runtimePa
             </div>
           ) : null}
 
+          {status === "error" && state?.message ? (
+            <div className="alert alert-error" style={{ marginTop: 16 }}>
+              <strong>{t(lang, "connect.errorTitle")}</strong>
+              <p style={{ marginBottom: 0, marginTop: 8, whiteSpace: "pre-wrap" }}>{state.message}</p>
+            </div>
+          ) : null}
+
           <div className="connect-actions">
             <div className="connect-primary-wrap">
               <button
@@ -92,11 +143,74 @@ export function ConnectPage({ lang, showDebug, state, profile, health, runtimePa
             </button>
           </div>
 
-          {state?.message ? (
+          {state?.message && status !== "error" ? (
             <p className="muted" style={{ marginTop: 16, marginBottom: 0 }}>
               {state.message}
             </p>
           ) : null}
+
+          {status === "connected" && stats ? (
+            <div className="connect-stats" style={{ marginTop: 16 }}>
+              <p className="card-title" style={{ marginBottom: 12 }}>
+                {t(lang, "connect.statsTitle")}
+              </p>
+              <div className="health-grid connect-stats-grid">
+                <div className="health-cell">
+                  <div className="health-label">{t(lang, "connect.stats.rx")}</div>
+                  <div className="health-value ok">{formatBytes(stats.rxBytes)}</div>
+                </div>
+                <div className="health-cell">
+                  <div className="health-label">{t(lang, "connect.stats.tx")}</div>
+                  <div className="health-value ok">{formatBytes(stats.txBytes)}</div>
+                </div>
+                <div className="health-cell">
+                  <div className="health-label">{t(lang, "connect.stats.handshake")}</div>
+                  <div className="health-value">{formatHandshake(lang, stats.lastHandshakeSec)}</div>
+                </div>
+                <div className="health-cell">
+                  <div className="health-label">{t(lang, "connect.stats.connectedFor")}</div>
+                  <div className="health-value">{formatConnectedDuration(stats.connectedSinceIso)}</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {status === "connected" && !stats ? (
+            <p className="muted" style={{ marginTop: 16, marginBottom: 0 }}>
+              {t(lang, "connect.stats.na")}
+            </p>
+          ) : null}
+
+          <div className="connect-ping" style={{ marginTop: 16 }}>
+            <p className="card-title" style={{ marginBottom: 8 }}>
+              {t(lang, "connect.ping")}
+            </p>
+            <p className="muted" style={{ marginTop: 0, marginBottom: 12, fontSize: "0.875rem" }}>
+              {t(lang, "connect.pingHint")}
+            </p>
+            <div className="connect-ping-row">
+              <button type="button" className="btn btn-primary" disabled={!profile || !runtimeReady || pingBusy} onClick={() => void runPing()}>
+                {pingBusy ? "…" : t(lang, "connect.pingRun")}
+              </button>
+              {pingResult ? (
+                <span className="connect-ping-result">
+                  {pingResult.ok ? (
+                    <>
+                      <span className="kbd">{pingResult.host}</span>
+                      {" — "}
+                      <strong>{pingResult.ms}</strong> {t(lang, "connect.pingMs")}
+                    </>
+                  ) : (
+                    <>
+                      <span className="kbd">{pingResult.host || "—"}</span>
+                      {" — "}
+                      <span className="text-danger">{pingResult.error ?? t(lang, "connect.pingFail")}</span>
+                    </>
+                  )}
+                </span>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         {showDebug ? (

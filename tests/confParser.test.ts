@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseWireguardConf } from "../electron/core/confParser";
+import { ConfParseError, parseWireguardConf } from "../electron/core/confParser";
 
 describe("parseWireguardConf", () => {
   it("parses minimal valid profile", () => {
@@ -13,8 +13,13 @@ describe("parseWireguardConf", () => {
     expect(parsed.allowedIps).toBe("0.0.0.0/0");
   });
 
-  it("throws on missing required fields", () => {
-    expect(() => parseWireguardConf("X", "[Interface]"))
-      .toThrow("Invalid .conf: missing required fields");
+  it("throws ConfParseError on missing required fields", () => {
+    expect(() => parseWireguardConf("X", "[Interface]")).toThrow(ConfParseError);
+    try {
+      parseWireguardConf("X", "[Interface]");
+    } catch (e) {
+      expect(e).toBeInstanceOf(ConfParseError);
+      expect((e as ConfParseError).code).toBe("missing_private_key");
+    }
   });
 });

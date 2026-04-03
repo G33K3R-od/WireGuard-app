@@ -38,6 +38,10 @@ Thanks for your interest in contributing.
 - Keep commits focused and descriptive.
 - Reference related issues in commit messages or the PR description.
 
+## Releases (maintainers)
+
+Tagging and GitHub Release assets are described in [`RELEASING.md`](RELEASING.md).
+
 ## Pull requests
 
 Before opening a PR, run:

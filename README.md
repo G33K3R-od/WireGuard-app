@@ -64,9 +64,9 @@ Short-term priorities for community alignment:
 | Priority | Item |
 | --- | --- |
 | UX | Smoother profile import/export and clearer validation feedback |
-| Diagnostics | Richer connection status, errors, and health-oriented insights |
+| Diagnostics | **Settings → Diagnostics:** app version, Electron/Node/OS, user data path, one-click copy for support; Connect debug block for runtime binaries |
 | Quality | Broader tests around Electron main-process and preload behavior |
-| Automation | CI for `typecheck`, `lint`, `test`, and Windows build smoke checks |
+| Automation | GitHub Actions: CI on every PR (`typecheck`, `lint`, `test`, `electron-vite` build); **Release** workflow on `v*` tags builds the NSIS installer and attaches assets (see `RELEASING.md`) |
 
 Items evolve with issues and PRs; pick work from open issues or propose a new one before large changes.
 

@@ -177,3 +177,103 @@ export async function uapiSet(pipePath: string, setBody: string): Promise<void> 
     });
   });
 }
+
+/** Host part of WireGuard `Endpoint` (`host:port`, `[ipv6]:port`). */
+export const parseWireguardEndpointHost = (endpoint: string): string | null => {
+  const t = endpoint.trim();
+  if (!t) {
+    return null;
+  }
+  if (t.startsWith("[")) {
+    const m = /^\[([^\]]+)]/.exec(t);
+    return m ? m[1].trim() : null;
+  }
+  const colon = t.lastIndexOf(":");
+  if (colon <= 0) {
+    return t;
+  }
+  return t.slice(0, colon).trim();
+};
+
+export const parseUapiGetStats = (buf: string): { rxBytes: number; txBytes: number; lastHandshakeSec: number } | null => {
+  const errnoMatch = buf.match(/errno=(\d+)/);
+  if (!errnoMatch || errnoMatch[1] !== "0") {
+    return null;
+  }
+  let rxBytes = 0;
+  let txBytes = 0;
+  let lastHandshakeSec = 0;
+  for (const line of buf.split(/\r?\n/)) {
+    const eq = line.indexOf("=");
+    if (eq === -1) {
+      continue;
+    }
+    const k = line.slice(0, eq).trim();
+    const v = line.slice(eq + 1).trim();
+    if (k === "rx_bytes") {
+      rxBytes = parseInt(v, 10) || 0;
+    }
+    if (k === "tx_bytes") {
+      txBytes = parseInt(v, 10) || 0;
+    }
+    if (k === "last_handshake_time_sec") {
+      lastHandshakeSec = parseInt(v, 10) || 0;
+    }
+  }
+  return { rxBytes, txBytes, lastHandshakeSec };
+};
+
+/**
+ * Read full device state from WireGuard UAPI (`get=1`).
+ * wireguard-go keeps the IPC connection open after each op (see `IpcHandle` loop), so we must not
+ * wait for `end`/`close` — we stop as soon as the response includes `errno=…` (status is written last).
+ */
+export async function uapiGet(pipePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let buf = "";
+    let settled = false;
+    const socket = net.createConnection(pipePath);
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        socket.destroy();
+        reject(new Error("UAPI get timeout"));
+      }
+    }, 10_000);
+    const finishOk = (data: string): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timeout);
+      socket.destroy();
+      resolve(data);
+    };
+    const finishErr = (err: Error): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timeout);
+      socket.destroy();
+      reject(err);
+    };
+    socket.on("connect", () => {
+      socket.write("get=1\n\n");
+    });
+    socket.on("data", (chunk) => {
+      buf += String(chunk);
+      if (/errno=\d+/.test(buf)) {
+        finishOk(buf);
+      }
+    });
+    socket.on("error", (err) => {
+      finishErr(err instanceof Error ? err : new Error(String(err)));
+    });
+    socket.on("close", () => {
+      if (!settled && /errno=\d+/.test(buf)) {
+        finishOk(buf);
+      }
+    });
+  });
+}
