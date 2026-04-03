@@ -1,6 +1,37 @@
 import { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, shell } from "electron";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+
+if (process.platform === "win32") {
+  app.setAppUserModelId("ru.wirepn.client");
+}
+
+const resolveUnderBuild = (...name: string[]): string => {
+  const fromApp = join(app.getAppPath(), "build", ...name);
+  if (existsSync(fromApp)) {
+    return fromApp;
+  }
+  return join(process.cwd(), "build", ...name);
+};
+
+const getAppIconPath = (): string | undefined => {
+  const p = resolveUnderBuild("icon.ico");
+  return existsSync(p) ? p : undefined;
+};
+
+const getTrayImage = (): Electron.NativeImage => {
+  const trayPng = resolveUnderBuild("tray.png");
+  if (existsSync(trayPng)) {
+    return nativeImage.createFromPath(trayPng);
+  }
+  const ico = resolveUnderBuild("icon.ico");
+  if (existsSync(ico)) {
+    return nativeImage.createFromPath(ico);
+  }
+  return nativeImage.createFromDataURL(
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAoMBgLxJzUQAAAAASUVORK5CYII="
+  );
+};
 import { importConfSchema } from "../shared/schemas";
 import { LogStore } from "../core/logStore";
 import { ProfileStore } from "../core/profileStore";
@@ -28,22 +59,14 @@ const trayLabel = (language: "ru" | "en", key: "show" | "connect" | "disconnect"
   return language === "ru" ? ru[key] : en[key];
 };
 
-const getTrayIcon = () => {
-  const candidate = join(app.getAppPath(), "build", "icon.ico");
-  if (existsSync(candidate)) {
-    return nativeImage.createFromPath(candidate);
-  }
-  return nativeImage.createFromDataURL(
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAoMBgLxJzUQAAAAASUVORK5CYII="
-  );
-};
-
 const createWindow = async (): Promise<void> => {
+  const icon = getAppIconPath();
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 760,
     minWidth: 900,
     minHeight: 600,
+    ...(icon ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
       contextIsolation: true,
@@ -116,7 +139,7 @@ const refreshTrayMenu = (): void => {
 };
 
 const createTray = (): void => {
-  tray = new Tray(getTrayIcon());
+  tray = new Tray(getTrayImage());
   tray.setToolTip("WirePN");
   refreshTrayMenu();
   tray.on("double-click", () => {

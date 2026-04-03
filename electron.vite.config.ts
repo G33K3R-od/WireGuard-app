@@ -23,6 +23,7 @@ export default defineConfig({
   },
   renderer: {
     root: ".",
+    publicDir: resolve(__dirname, "build"),
     plugins: [react()],
     build: {
       rollupOptions: {

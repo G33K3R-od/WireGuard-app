@@ -1,6 +1,6 @@
 {
   "name": "wirepn-windows",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "WirePN Windows client",
   "main": "out/main/index.js",
@@ -29,6 +29,7 @@
     "electron-builder": "26.8.1",
     "electron-vite": "5.0.0",
     "eslint": "9.38.0",
+    "rcedit": "^5.0.2",
     "typescript": "6.0.2",
     "vite": "7.3.1",
     "vitest": "4.1.2"
@@ -36,11 +37,13 @@
   "build": {
     "appId": "ru.wirepn.client",
     "productName": "WirePN",
+    "icon": "build/icon.ico",
     "directories": {
       "output": "release"
     },
     "files": [
       "out/**",
+      "build/**",
       "runtime/**",
       "package.json"
     ],
@@ -50,6 +53,7 @@
         "to": "runtime/bin"
       }
     ],
+    "afterPack": "./scripts/after-pack-win.mjs",
     "win": {
       "target": [
         "nsis"

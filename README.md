@@ -38,7 +38,7 @@ npm run build:win
 
 ## Release builds
 
-`npm run build:win` writes installers under `release/`. The project sets `signAndEditExecutable` to `false` so Electron Builder does not run the Windows code-signing toolchain that requires extracting `winCodeSign` (that step can fail on some Windows setups without symlink privileges). Installers are **not** Authenticode-signed unless you add your own certificate and signing configuration.
+`npm run build:win` writes installers under `release/`. **`build/icon.ico` must include at least a 256×256 bitmap** (electron-builder rejects smaller icons for the NSIS wizard). The project sets **`signAndEditExecutable` to `false`** so electron-builder does not unpack **winCodeSign** (that step can fail on Windows without symlink privileges). An **`afterPack`** script then runs **`rcedit`** from npm to embed **`requireAdministrator`** and the app icon into `WirePN.exe` without winCodeSign. Code signing is skipped when no certificate is configured; add your own cert and `signtool` setup if you need Authenticode.
 
 ## Runtime Binaries
 
