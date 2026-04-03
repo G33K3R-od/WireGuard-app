@@ -1,16 +1,39 @@
 import { useEffect, useState } from "react";
 import type { AppSettings } from "../../electron/core/settingsStore";
+import type { HealthReport } from "../../electron/shared/types";
 import type { UiLanguage } from "../i18n";
 import { t } from "../i18n";
 
 interface Props {
   lang: UiLanguage;
   settings: AppSettings;
+  health: HealthReport | null;
   onSave: (next: Partial<AppSettings>) => Promise<void>;
 }
 
-export function SettingsPage({ lang, settings, onSave }: Props) {
+function buildSupportDiagnosticsText(health: HealthReport | null): string {
+  if (!health) {
+    return "WirePN\n(health unavailable)";
+  }
+  const lines = [
+    `WirePN ${health.appVersion}`,
+    `Electron ${health.electronVersion}`,
+    `Node ${health.nodeVersion}`,
+    `OS ${health.osPlatform}`,
+    `Runtime bin: ${health.runtimeBinDir}`,
+    `User data: ${health.userDataPath}`,
+    `Profiles: ${health.profileCount}`,
+    `wireguard-go: ${health.runtimeBinary ? "ok" : "missing"}`,
+    `Wintun: ${health.wintunBinary ? "ok" : "missing"}`,
+    `Tunnel: ${health.status}`,
+    health.lastError ? `Last error: ${health.lastError}` : null
+  ].filter((x): x is string => Boolean(x));
+  return lines.join("\n");
+}
+
+export function SettingsPage({ lang, settings, health, onSave }: Props) {
   const [draft, setDraft] = useState(settings);
+  const [copied, setCopied] = useState(false);
   const themeLabel = (value: AppSettings["theme"]) =>
     value === "light" ? t(lang, "settings.theme.light") : value === "dark" ? t(lang, "settings.theme.dark") : t(lang, "settings.theme.system");
   const languageLabel = (value: AppSettings["language"]) => (value === "ru" ? t(lang, "settings.language.ru") : t(lang, "settings.language.en"));
@@ -121,6 +144,63 @@ export function SettingsPage({ lang, settings, onSave }: Props) {
           {t(lang, "settings.theme").toLowerCase()} — {themeLabel(settings.theme)}, {t(lang, "settings.language").toLowerCase()} —{" "}
           {languageLabel(settings.language)}.
         </p>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <p className="card-title" style={{ marginBottom: 8 }}>
+          {t(lang, "settings.diagnosticsTitle")}
+        </p>
+        <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
+          {t(lang, "settings.diagnosticsDesc")}
+        </p>
+        {health !== null && !health.appVersion ? (
+          <p className="muted text-danger" style={{ marginTop: 0, marginBottom: 12 }}>
+            {t(lang, "settings.diagnosticsStaleHint")}
+          </p>
+        ) : null}
+        <div className="health-grid">
+          <div className="health-cell">
+            <div className="health-label">WirePN</div>
+            <div className="health-value">
+              {health === null ? t(lang, "settings.diagnosticsLoading") : (health.appVersion || "—")}
+            </div>
+          </div>
+          <div className="health-cell">
+            <div className="health-label">Electron</div>
+            <div className="health-value">
+              {health === null ? t(lang, "settings.diagnosticsLoading") : (health.electronVersion || "—")}
+            </div>
+          </div>
+          <div className="health-cell">
+            <div className="health-label">Node</div>
+            <div className="health-value">
+              {health === null ? t(lang, "settings.diagnosticsLoading") : (health.nodeVersion || "—")}
+            </div>
+          </div>
+          <div className="health-cell">
+            <div className="health-label">OS</div>
+            <div className="health-value">
+              {health === null ? t(lang, "settings.diagnosticsLoading") : (health.osPlatform || "—")}
+            </div>
+          </div>
+        </div>
+        {health?.userDataPath ? (
+          <p className="muted" style={{ marginTop: 12, marginBottom: 8, fontSize: 12, wordBreak: "break-all" }}>
+            {health.userDataPath}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => {
+            void navigator.clipboard.writeText(buildSupportDiagnosticsText(health)).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            });
+          }}
+        >
+          {copied ? t(lang, "settings.copied") : t(lang, "settings.copySupportInfo")}
+        </button>
       </div>
     </section>
   );

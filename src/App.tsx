@@ -79,8 +79,14 @@ export function App() {
       setState(nextState);
       setLogs(nextLogs);
       setHealth(nextHealth);
+      setError("");
     } catch (e) {
       setError(String(e));
+      try {
+        setHealth(await window.wirepn.health());
+      } catch {
+        /* still no health — UI shows loading / dashes */
+      }
     }
   };
 
@@ -103,6 +109,16 @@ export function App() {
       setError("");
     } catch (e) {
       setError(String(e));
+      try {
+        setHealth(await window.wirepn.health());
+      } catch {
+        /* ignore */
+      }
+      try {
+        setRuntimePaths(await window.wirepn.getRuntimePaths());
+      } catch {
+        /* ignore */
+      }
     }
   };
 
@@ -168,6 +184,12 @@ export function App() {
       setTab("connect");
     }
   }, [settings.debug, tab]);
+
+  useEffect(() => {
+    if (tab === "settings") {
+      void refreshRuntimeSnapshot();
+    }
+  }, [tab]);
 
   return (
     <div className="app-shell">
@@ -285,6 +307,7 @@ export function App() {
           <SettingsPage
             lang={lang}
             settings={settings}
+            health={health}
             onSave={async (next) => {
               const updated = await window.wirepn.setSettings(next);
               setSettings(updated);
