@@ -62,17 +62,46 @@ jobs:
           }
           Write-Host "OK: $($exe[0].Name)"
 
-      # Only require the NSIS .exe here. `.blockmap` is optional (electron-builder may omit it
-      # depending on config); listing it with fail_on_unmatched_files caused exit 1 on upload.
-      - name: Upload installer to GitHub Release
+      # Text on the GitHub Release page + optional copy of RELEASE_NOTES_<semver>.md as an asset.
+      - name: Prepare release notes (from RELEASE_NOTES_<version>.md)
+        id: relnotes
+        shell: pwsh
+        run: |
+          $v = (node -p "require('./package.json').version")
+          $src = "RELEASE_NOTES_$v.md"
+          $body = "RELEASE_BODY_FOR_GITHUB.md"
+          if (Test-Path $src) {
+            Copy-Item -Path $src -Destination $body -Force
+            "has_notes_file=true" >> $env:GITHUB_OUTPUT
+            "notes_path=$src" >> $env:GITHUB_OUTPUT
+            Write-Host "Using $src as release body and optional asset."
+          } else {
+            $fallback = "## WirePN $v`n`nNo ``RELEASE_NOTES_$v.md`` in this commit — see ``CHANGELOG.md``."
+            Set-Content -Path $body -Value $fallback -Encoding utf8
+            "has_notes_file=false" >> $env:GITHUB_OUTPUT
+            Write-Host "No RELEASE_NOTES_$v.md — placeholder body only."
+          }
+
+      - name: Create GitHub Release (installer + description)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          body_path: RELEASE_BODY_FOR_GITHUB.md
           files: release/*.exe
-          generate_release_notes: true
+          generate_release_notes: false
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attach RELEASE_NOTES_*.md as download
+        if: steps.relnotes.outputs.has_notes_file == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
+          $f = "${{ steps.relnotes.outputs.notes_path }}"
+          gh release upload $tag $f --clobber --repo "${{ github.repository }}"
 
       - name: Upload blockmap if present
         shell: pwsh

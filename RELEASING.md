@@ -7,8 +7,9 @@ The single source of truth is **`package.json`** → `"version"` (semver). The s
 ## Steps (maintainer)
 
 1. **Changelog** — Move items from `[Unreleased]` into a dated section `[x.y.z] — YYYY-MM-DD` in `CHANGELOG.md`, or add a short entry for the release.
-2. **Commit** — `git add` + commit with a message like `chore: release 0.3.0`.
-3. **Tag** — Create an annotated tag matching the version:
+2. **Release notes (optional)** — If you add **`RELEASE_NOTES_<version>.md`** at the repo root (e.g. `RELEASE_NOTES_0.3.0.md` matching `package.json` version), the **Release** workflow uses it as the **GitHub Release description** and also attaches the same file as a **downloadable asset**. If the file is missing, a short placeholder is used instead.
+3. **Commit** — `git add` + commit with a message like `chore: release 0.3.0`.
+4. **Tag** — Create an annotated tag matching the version:
 
    ```bash
    git tag -a v0.3.0 -m "WirePN 0.3.0"
@@ -16,19 +17,19 @@ The single source of truth is **`package.json`** → `"version"` (semver). The s
 
    Tag name **must** start with `v` (e.g. `v0.3.0`) so the **Release** workflow runs.
 
-4. **Push** — Push commits and tags:
+5. **Push** — Push commits and tags:
 
    ```bash
    git push origin main
    git push origin v0.3.0
    ```
 
-5. **GitHub Release** — The workflow **Release** (`.github/workflows/release.yml`) builds the Windows NSIS installer on `windows-latest` and uploads:
+6. **GitHub Release** — The workflow **Release** (`.github/workflows/release.yml`) builds the Windows NSIS installer on `windows-latest` and uploads:
 
    - `release/*.exe` (installer; required)
    - `release/*.blockmap` when present (optional; uploaded in a follow-up step if it exists)
 
-   Release notes are auto-generated; you can edit the release on GitHub afterward.
+   The release description comes from **`RELEASE_NOTES_<version>.md`** when present (see step 2); otherwise a short placeholder. You can still edit the release text on GitHub afterward.
 
    **If the release only shows “Source code (zip/tar.gz)” and no `.exe`:** the installer was **not** uploaded by Actions. Common causes:
 
