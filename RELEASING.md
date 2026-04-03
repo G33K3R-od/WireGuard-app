@@ -25,8 +25,8 @@ The single source of truth is **`package.json`** → `"version"` (semver). The s
 
 5. **GitHub Release** — The workflow **Release** (`.github/workflows/release.yml`) builds the Windows NSIS installer on `windows-latest` and uploads:
 
-   - `release/*.exe` (installer)
-   - `release/*.blockmap` (for future auto-update tooling)
+   - `release/*.exe` (installer; required)
+   - `release/*.blockmap` when present (optional; uploaded in a follow-up step if it exists)
 
    Release notes are auto-generated; you can edit the release on GitHub afterward.
 

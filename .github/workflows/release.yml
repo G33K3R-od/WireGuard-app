@@ -60,14 +60,29 @@ jobs:
           }
           Write-Host "OK: $($exe[0].Name)"
 
-      - name: Upload to GitHub Release
+      # Only require the NSIS .exe here. `.blockmap` is optional (electron-builder may omit it
+      # depending on config); listing it with fail_on_unmatched_files caused exit 1 on upload.
+      - name: Upload installer to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
-          files: |
-            release/*.exe
-            release/*.blockmap
+          files: release/*.exe
           generate_release_notes: true
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload blockmap if present
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
+          $bm = Get-ChildItem -Path release -Filter *.blockmap -File -ErrorAction SilentlyContinue
+          if ($bm.Count -eq 0) {
+            Write-Host "No .blockmap in release/ — skipping (optional for future auto-update)."
+            exit 0
+          }
+          foreach ($f in $bm) {
+            gh release upload $tag $f.FullName --clobber --repo "${{ github.repository }}"
+          }
