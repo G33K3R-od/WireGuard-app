@@ -37,12 +37,14 @@ jobs:
       - name: Test
         run: npm test
 
+      # Call electron-builder with --publish never here so CI never asks for GH_TOKEN, even if an
+      # older tag points at a commit whose package.json still has `npm run build:win` without never.
       - name: Build app + NSIS
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: |
           npm run build
-          npm run build:win
+          npx electron-builder --win nsis --publish never
 
       - name: List release directory
         shell: pwsh
