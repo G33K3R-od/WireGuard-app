@@ -30,6 +30,14 @@ The single source of truth is **`package.json`** → `"version"` (semver). The s
 
    Release notes are auto-generated; you can edit the release on GitHub afterward.
 
+   **If the release only shows “Source code (zip/tar.gz)” and no `.exe`:** the installer was **not** uploaded by Actions. Common causes:
+
+   - The workflow file was **not on `main`** when you pushed the tag — merge `.github/workflows/release.yml`, push `main`, then **re-run** (see below).
+   - You **created the release only in the GitHub UI** without running the workflow — delete the empty release assets expectation and either **push the tag again** after fixing, or use **Actions → Release → Run workflow** (workflow dispatch) and enter tag `v0.3.0`.
+   - The **Build** step failed — open the failed job log; the workflow now **fails** if `release/*.exe` is missing.
+
+   **Manual re-upload after fixing `main`:** Actions → **Release** → **Run workflow** → Tag: `v0.3.0` → Run. That checks out that tag, builds, and attaches the installer to the existing GitHub Release for that tag.
+
 ## CI
 
 Every push or pull request to `main` / `master` runs **typecheck**, **lint**, **test**, and **electron-vite build** (`.github/workflows/ci.yml`). Fix failures before tagging.

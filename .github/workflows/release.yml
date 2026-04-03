@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and upload (e.g. v0.3.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,6 +19,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -35,12 +44,30 @@ jobs:
           npm run build
           npm run build:win
 
+      - name: List release directory
+        shell: pwsh
+        run: |
+          if (-not (Test-Path release)) { Write-Error "release/ missing"; exit 1 }
+          Get-ChildItem -Path release -Force | Format-Table Name, Length -AutoSize
+
+      - name: Verify installer exists
+        shell: pwsh
+        run: |
+          $exe = @(Get-ChildItem -Path release -Filter *.exe -File -ErrorAction SilentlyContinue)
+          if ($exe.Count -lt 1) {
+            Write-Error "No .exe in release/. NSIS build did not produce an installer — check Build step logs."
+            exit 1
+          }
+          Write-Host "OK: $($exe[0].Name)"
+
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
           files: |
             release/*.exe
             release/*.blockmap
           generate_release_notes: true
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
