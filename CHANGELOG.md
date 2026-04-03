@@ -4,6 +4,16 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-04-03
+
+### Fixed
+
+- **GitHub Releases:** tag `v0.3.1` is intended to ship the **NSIS installer** (`WirePN Setup 0.3.1.exe`) and **`.blockmap`** from CI once the full `main` branch is pushed (fixes missing or empty assets on earlier tags).
+
+### Notes
+
+- No profile or settings migration; replace the app by running the new installer over the previous one.
+
 ## [0.3.0] — 2026-04-03
 
 ### Added
