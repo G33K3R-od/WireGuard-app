@@ -31,7 +31,7 @@ body:
     id: app-version
     attributes:
       label: App version
-      placeholder: 0.2.0
+      placeholder: "1.0.0"
     validations:
       required: true
   - type: input
@@ -41,6 +41,14 @@ body:
       placeholder: Windows 11 23H2
     validations:
       required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics (recommended)
+      description: In the app open Settings and use “Copy support info” / «Скопировать сведения», then paste here. Remove any secrets if your logs contain them.
+      placeholder: Paste the diagnostics block from Settings…
+    validations:
+      required: false
   - type: textarea
     id: logs
     attributes:

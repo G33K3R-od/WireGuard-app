@@ -8,7 +8,6 @@ import { ProfileStore } from "./profileStore";
 import { SettingsStore } from "./settingsStore";
 import {
   WG_TUN_INTERFACE_NAME,
-  WINTUN_ADMIN_REQUIRED_MESSAGE,
   buildUapiSetBody,
   isWintunAccessDenied,
   parseUapiGetStats,
@@ -17,6 +16,7 @@ import {
   uapiSet,
   waitForWireGuardUapiPipeWhileProcessRuns
 } from "./wireguardUapi";
+import { RuntimeErrorCode, runtimeError } from "../shared/runtimeErrorCodes";
 import { pingHostWindows } from "./pingWindows";
 import { cleanupWireGuardTunnelWindows, configureWireGuardTunnelWindows } from "./windowsTunnel";
 import { buildWireguardConfFile } from "./confParser";
@@ -166,19 +166,18 @@ export class RuntimeManager {
       ? this.profileStore.list().find((p) => p.id === profileId)
       : this.profileStore.getActiveProfile();
     if (!profile) {
-      throw new Error("No profile selected");
+      throw runtimeError(RuntimeErrorCode.NO_PROFILE_SELECTED);
     }
 
     const paths = getRuntimePaths();
     if (!existsSync(paths.wireguardGo)) {
-      throw new Error(
-        `Нет wireguard-go.exe. Положите файл сюда:\n${paths.wireguardGo}\n\nСм. runtime/bin/README.txt`
+      throw runtimeError(
+        RuntimeErrorCode.MISSING_WIREGUARD_GO,
+        `${paths.wireguardGo}\nruntime/bin/README.txt`
       );
     }
     if (!existsSync(paths.wintunDll)) {
-      throw new Error(
-        `Нет wintun.dll. Положите файл сюда:\n${paths.wintunDll}\n\nСм. https://www.wintun.net/`
-      );
+      throw runtimeError(RuntimeErrorCode.MISSING_WINTUN, `${paths.wintunDll}\nhttps://www.wintun.net/`);
     }
 
     this.updateState({ status: "connecting", profileId: profile.id, message: "Starting runtime" });
@@ -221,8 +220,8 @@ export class RuntimeManager {
       }
       const droppedProfileId = this.state.profileId;
       const msg = isWintunAccessDenied(stderrAcc.text)
-        ? WINTUN_ADMIN_REQUIRED_MESSAGE
-        : `Exited: ${code ?? "unknown"}`;
+        ? RuntimeErrorCode.WINTUN_ADMIN
+        : runtimeError(RuntimeErrorCode.WG_PROCESS_EXITED, String(code ?? "unknown")).message;
       this.updateState({ status: "disconnected", message: msg });
       if (!wasStopping && droppedProfileId && this.settings.get().autoReconnect) {
         this.scheduleReconnectAfterDrop(droppedProfileId);

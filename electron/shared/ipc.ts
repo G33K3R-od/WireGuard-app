@@ -1,6 +1,6 @@
 import type { AppSettings } from "../core/settingsStore";
 import type { RuntimePaths } from "../core/runtimeManager";
-import type { HealthReport, LogEntry, PingResult, RuntimeState, TunnelStats, VpnProfile } from "../shared/types";
+import type { HealthReport, LogEntry, PingResult, RuntimeState, TunnelStats, UpdateCheckResult, VpnProfile } from "../shared/types";
 
 export interface WirepnApi {
   getState: () => Promise<RuntimeState>;
@@ -19,6 +19,8 @@ export interface WirepnApi {
   getLogs: () => Promise<LogEntry[]>;
   getSettings: () => Promise<AppSettings>;
   setSettings: (next: Partial<AppSettings>) => Promise<AppSettings>;
+  checkForUpdates: () => Promise<UpdateCheckResult>;
+  openExternal: (url: string) => Promise<void>;
   onRuntimeStateChanged: (handler: (state: RuntimeState) => void) => () => void;
 }
 

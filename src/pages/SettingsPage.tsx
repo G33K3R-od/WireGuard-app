@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { AppSettings } from "../../electron/core/settingsStore";
-import type { HealthReport } from "../../electron/shared/types";
+import type { HealthReport, UpdateCheckResult } from "../../electron/shared/types";
 import type { UiLanguage } from "../i18n";
 import { t } from "../i18n";
 
@@ -34,6 +34,8 @@ function buildSupportDiagnosticsText(health: HealthReport | null): string {
 export function SettingsPage({ lang, settings, health, onSave }: Props) {
   const [draft, setDraft] = useState(settings);
   const [copied, setCopied] = useState(false);
+  const [updateBusy, setUpdateBusy] = useState(false);
+  const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null);
   const themeLabel = (value: AppSettings["theme"]) =>
     value === "light" ? t(lang, "settings.theme.light") : value === "dark" ? t(lang, "settings.theme.dark") : t(lang, "settings.theme.system");
   const languageLabel = (value: AppSettings["language"]) => (value === "ru" ? t(lang, "settings.language.ru") : t(lang, "settings.language.en"));
@@ -144,6 +146,61 @@ export function SettingsPage({ lang, settings, health, onSave }: Props) {
           {t(lang, "settings.theme").toLowerCase()} — {themeLabel(settings.theme)}, {t(lang, "settings.language").toLowerCase()} —{" "}
           {languageLabel(settings.language)}.
         </p>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <p className="card-title" style={{ marginBottom: 8 }}>
+          {t(lang, "settings.updatesTitle")}
+        </p>
+        <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
+          {t(lang, "settings.updatesDesc")}
+        </p>
+        <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
+          {t(lang, "settings.updatesCurrent")}:{" "}
+          <strong>{health?.appVersion?.trim() || "—"}</strong>
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={updateBusy}
+            onClick={() => {
+              setUpdateBusy(true);
+              setUpdateResult(null);
+              void window.wirepn
+                .checkForUpdates()
+                .then((r) => setUpdateResult(r))
+                .finally(() => setUpdateBusy(false));
+            }}
+          >
+            {updateBusy ? t(lang, "settings.updatesChecking") : t(lang, "settings.updatesCheck")}
+          </button>
+          {updateResult?.ok && updateResult.releaseUrl && updateResult.updateAvailable ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => void window.wirepn.openExternal(updateResult.releaseUrl!)}
+            >
+              {t(lang, "settings.updatesDownload")}
+            </button>
+          ) : null}
+        </div>
+        {updateResult ? (
+          <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+            {!updateResult.ok ? (
+              <>
+                {t(lang, "settings.updatesError")}
+                {updateResult.error ? `: ${updateResult.error}` : ""}
+              </>
+            ) : updateResult.updateAvailable ? (
+              <>
+                {t(lang, "settings.updatesAvailable")}: {updateResult.latestVersion ?? "—"}
+              </>
+            ) : (
+              t(lang, "settings.updatesNone")
+            )}
+          </p>
+        ) : null}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>

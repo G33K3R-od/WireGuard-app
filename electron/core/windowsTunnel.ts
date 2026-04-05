@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { VpnProfile } from "../shared/types";
+import { RuntimeErrorCode, runtimeError } from "../shared/runtimeErrorCodes";
 
 const execFileAsync = promisify(execFile);
 
@@ -182,22 +183,15 @@ Get-NetRoute -DestinationPrefix '0.0.0.0/1','128.0.0.0/1','::/1','8000::/1' -Err
     const err = e as NodeJS.ErrnoException & { stderr?: string; stdout?: string; status?: number };
     const detail = [err.stderr, err.stdout, err.message].filter(Boolean).join("\n");
     if (/Access is denied|Отказано в доступе|0x80070005|denied/i.test(detail)) {
-      throw new Error(
-        "Windows не дала добавить маршруты/DNS (нужны права администратора). " +
-          "Запустите WirePN от имени администратора, иначе туннель есть, а трафик идёт мимо VPN. " +
-          `Подробности: ${detail}`
-      );
+      throw runtimeError(RuntimeErrorCode.TUNNEL_ROUTE_DENIED, detail);
     }
     if (/already exists|уже существует|MSFT_NetRoute already exists|System Error 87/i.test(detail)) {
-      throw new Error(`Маршрут уже существует (дубликат) при настройке туннеля. Подробности: ${detail}`);
+      throw runtimeError(RuntimeErrorCode.TUNNEL_ROUTE_DUPLICATE, detail);
     }
     if (/Element not found|1168|не найден/i.test(detail)) {
-      throw new Error(
-        "Не найден сетевой адаптер Wintun по имени (ошибка 1168). " +
-          `Подробности: ${detail}`
-      );
+      throw runtimeError(RuntimeErrorCode.TUNNEL_ADAPTER_NOT_FOUND, detail);
     }
-    throw new Error(detail || String(e));
+    throw runtimeError(RuntimeErrorCode.TUNNEL_POWERSHELL_FAILED, detail || String(e));
   }
 }
 

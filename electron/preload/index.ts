@@ -18,6 +18,8 @@ const api: WirepnApi = {
   getLogs: () => ipcRenderer.invoke("logs:list"),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   setSettings: (next) => ipcRenderer.invoke("settings:set", next),
+  checkForUpdates: () => ipcRenderer.invoke("updates:check"),
+  openExternal: (url: string) => ipcRenderer.invoke("app:open-external", url),
   onRuntimeStateChanged: (handler) => {
     const channel = "runtime:state-changed";
     const wrapped = (_event: Electron.IpcRendererEvent, state: Awaited<ReturnType<WirepnApi["getState"]>>) => {

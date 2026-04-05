@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { RuntimeErrorCode } from "../electron/shared/runtimeErrorCodes";
 import {
   buildUapiSetBody,
   errorForWireguardGoEarlyExit,
@@ -55,11 +56,11 @@ describe("errorForWireguardGoEarlyExit", () => {
   it("maps Wintun access denied", () => {
     const e = errorForWireguardGoEarlyExit("Failed to create TUN: Access is denied (0x00000005)", 1);
     expect(isWintunAccessDenied("Failed to create TUN: Access is denied (0x00000005)")).toBe(true);
-    expect(e.message).toContain("администратора");
+    expect(e.message).toContain(RuntimeErrorCode.WINTUN_ADMIN);
   });
 
   it("uses generic message for unknown stderr", () => {
     const e = errorForWireguardGoEarlyExit("something else", 2);
-    expect(e.message).toContain("wireguard-go");
+    expect(e.message).toContain(RuntimeErrorCode.WG_GO_EARLY_EXIT);
   });
 });

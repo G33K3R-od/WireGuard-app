@@ -109,6 +109,18 @@ export function ProfilesPage({ lang, profiles, activeProfileId, onImport, onSetA
         <p className="page-desc">{t(lang, "profiles.desc")}</p>
       </header>
 
+      <div className="card routing-hint-card">
+        <p className="card-title" style={{ marginBottom: 8 }}>
+          {t(lang, "profiles.routingTitle")}
+        </p>
+        <p className="muted" style={{ marginTop: 0, marginBottom: 8 }}>
+          {t(lang, "profiles.routingBody")}
+        </p>
+        <p className="muted" style={{ marginTop: 0, marginBottom: 0, fontSize: 13 }}>
+          {t(lang, "profiles.routingModesHint")}
+        </p>
+      </div>
+
       <div className="stack">
         <div className="card">
           <p className="card-title" style={{ marginBottom: 16 }}>
@@ -173,8 +185,11 @@ export function ProfilesPage({ lang, profiles, activeProfileId, onImport, onSetA
                   <div>
                     <p className="profile-name">{p.name}</p>
                     <p className="profile-meta">{p.endpoint}</p>
-                    <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>
+                    <p className="muted" style={{ marginTop: 8, marginBottom: 4 }}>
                       <span className="pill">{modeLabel(lang)[p.mode]}</span>
+                    </p>
+                    <p className="muted profile-allowed-hint" style={{ marginTop: 0, marginBottom: 0 }}>
+                      {t(lang, "profiles.routingAllowedIps")}: <code className="inline-code">{p.allowedIps}</code>
                     </p>
                   </div>
                   <div className="profile-actions">

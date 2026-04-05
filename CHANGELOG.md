@@ -4,6 +4,29 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-04-03
+
+### Added
+
+- **1.x stable line** — same features as 0.3.x; version marks readiness for production use with documented limitations.
+- **THIRD_PARTY_NOTICES.md** — bundled components and license links.
+- **SMOKE_TEST.md** — manual QA checklist before tagging releases.
+- **User-facing errors** — stable `WIREPN_RUNTIME:*` codes from the main process, mapped to RU/EN in the renderer to match UI language.
+- **GitHub issue template** — optional “Diagnostics” field (paste from Settings).
+- **README:** Known limitations (admin, runtime binaries, unsigned builds / SmartScreen, manual update check).
+- **RELEASING:** Semver note for 1.x breaking changes.
+- **Release workflow:** optional Windows Authenticode signing when repository secrets `WINDOWS_CERTIFICATE_PFX` and `WINDOWS_CERTIFICATE_PASSWORD` are set (see README / RELEASING).
+
+### Changed
+
+- Onboarding modal: initial focus and Escape to dismiss (accessibility).
+
+### Notes
+
+- Install over 0.2.x / 0.3.x to upgrade; profile and settings formats unchanged.
+- See **README → Known limitations** and **RELEASE_NOTES_1.0.0.md** for users.
+- After merge, run **`git tag -a v1.0.0 -m "WirePN 1.0.0"`** and **`git push origin v1.0.0`** so the Release workflow builds **`WirePN Setup 1.0.0.exe`** (see `RELEASING.md`).
+
 ## [0.3.0] — 2026-04-03
 
 ### Added

@@ -1,19 +1,9 @@
 import type { ChildProcess } from "node:child_process";
 import * as net from "node:net";
+import { RuntimeErrorCode, runtimeError } from "../shared/runtimeErrorCodes";
 
 /** Wintun adapter name; must match the single CLI arg passed to wireguard-go.exe */
 export const WG_TUN_INTERFACE_NAME = "WirePN0";
-
-/** Shown when Wintun returns ERROR_ACCESS_DENIED (0x5) without admin rights */
-export const WINTUN_ADMIN_REQUIRED_MESSAGE =
-  "Нужны права администратора: Wintun не может создать сетевой адаптер. " +
-  "Запустите WirePN от имени администратора. В режиме разработки запустите терминал или IDE с правами администратора, затем снова npm run dev.";
-
-/** Upstream UAPI pipe uses SYSTEM as owner; many sessions cannot create that pipe. */
-export const WG_UAPI_PIPE_MESSAGE =
-  "Не удалось открыть UAPI pipe WireGuard (ошибка владельца объекта). " +
-  "Пересоберите wireguard-go скриптом apps/wirepn-windows/scripts/fetch-runtime.ps1 — в сборке исправлен путь к pipe. " +
-  "Либо запустите WirePN с правами администратора вместе с официальным wireguard-go.exe.";
 
 export function isWintunAccessDenied(stderr: string): boolean {
   return /Access is denied|0x00000005|Failed to create TUN/i.test(stderr);
@@ -28,12 +18,12 @@ export function isUapiPipeOwnerError(stderr: string): boolean {
 
 export function errorForWireguardGoEarlyExit(stderr: string, code: number | null): Error {
   if (isWintunAccessDenied(stderr)) {
-    return new Error(WINTUN_ADMIN_REQUIRED_MESSAGE);
+    return runtimeError(RuntimeErrorCode.WINTUN_ADMIN);
   }
   if (isUapiPipeOwnerError(stderr)) {
-    return new Error(WG_UAPI_PIPE_MESSAGE);
+    return runtimeError(RuntimeErrorCode.UAPI_PIPE_OWNER);
   }
-  return new Error(`wireguard-go завершился до готовности туннеля (код ${code ?? "?"})`);
+  return runtimeError(RuntimeErrorCode.WG_GO_EARLY_EXIT, String(code ?? "?"));
 }
 
 /** Official wireguard-go (elevated): ProtectedPrefix pipe. Patched build (fetch-runtime.ps1): `WireGuard\`. */
@@ -100,7 +90,7 @@ export async function waitForWireGuardUapiPipe(interfaceName: string, timeoutMs 
     }
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw new Error(`WireGuard UAPI pipe not ready: ${lastErr?.message ?? "timeout"}`);
+  throw runtimeError(RuntimeErrorCode.UAPI_PIPE_NOT_READY, lastErr?.message ?? "timeout");
 }
 
 export async function waitForWireGuardUapiPipeWhileProcessRuns(
@@ -126,7 +116,7 @@ export async function waitForWireGuardUapiPipeWhileProcessRuns(
     }
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw new Error(`WireGuard UAPI pipe not ready: ${lastErr?.message ?? "timeout"}`);
+  throw runtimeError(RuntimeErrorCode.UAPI_PIPE_NOT_READY, lastErr?.message ?? "timeout");
 }
 
 export async function uapiSet(pipePath: string, setBody: string): Promise<void> {
@@ -145,7 +135,7 @@ export async function uapiSet(pipePath: string, setBody: string): Promise<void> 
     };
     const timeout = setTimeout(() => {
       socket.destroy();
-      finish(() => reject(new Error("UAPI set timeout")));
+      finish(() => reject(runtimeError(RuntimeErrorCode.UAPI_SET_TIMEOUT)));
     }, 15000);
     socket.on("connect", () => {
       socket.write(`set=1\n${setBody}`);
@@ -159,7 +149,7 @@ export async function uapiSet(pipePath: string, setBody: string): Promise<void> 
       socket.destroy();
       finish(() => {
         if (m[1] !== "0") {
-          reject(new Error(`UAPI failed (errno=${m[1]})`));
+          reject(runtimeError(RuntimeErrorCode.UAPI_SET_FAILED, `errno=${m[1]}`));
         } else {
           resolve();
         }
@@ -171,7 +161,7 @@ export async function uapiSet(pipePath: string, setBody: string): Promise<void> 
     socket.on("close", () => {
       finish(() => {
         if (!buf.includes("errno=")) {
-          reject(new Error("UAPI closed without errno response"));
+          reject(runtimeError(RuntimeErrorCode.UAPI_CLOSED_NO_ERRNO));
         }
       });
     });
@@ -237,7 +227,7 @@ export async function uapiGet(pipePath: string): Promise<string> {
       if (!settled) {
         settled = true;
         socket.destroy();
-        reject(new Error("UAPI get timeout"));
+        reject(runtimeError(RuntimeErrorCode.UAPI_GET_TIMEOUT));
       }
     }, 10_000);
     const finishOk = (data: string): void => {

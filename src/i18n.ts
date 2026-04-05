@@ -1,4 +1,5 @@
 import type { RuntimeState } from "../electron/shared/types";
+import { RuntimeErrorCode } from "../electron/shared/runtimeErrorCodes";
 
 export type UiLanguage = "ru" | "en";
 
@@ -76,6 +77,17 @@ export type I18nKey =
   | "profiles.mode.full"
   | "profiles.mode.split"
   | "profiles.delete"
+  | "profiles.routingTitle"
+  | "profiles.routingBody"
+  | "profiles.routingModesHint"
+  | "profiles.routingAllowedIps"
+  | "onboarding.title"
+  | "onboarding.uac"
+  | "onboarding.import"
+  | "onboarding.links"
+  | "onboarding.readme"
+  | "onboarding.releases"
+  | "onboarding.dismiss"
   | "settings.title"
   | "settings.desc"
   | "settings.startWithWindows"
@@ -103,6 +115,15 @@ export type I18nKey =
   | "settings.diagnosticsStaleHint"
   | "settings.copySupportInfo"
   | "settings.copied"
+  | "settings.updatesTitle"
+  | "settings.updatesDesc"
+  | "settings.updatesCheck"
+  | "settings.updatesChecking"
+  | "settings.updatesCurrent"
+  | "settings.updatesAvailable"
+  | "settings.updatesNone"
+  | "settings.updatesError"
+  | "settings.updatesDownload"
   | "logs.title"
   | "logs.desc"
   | "logs.entries"
@@ -190,6 +211,21 @@ const dict: Record<UiLanguage, Record<I18nKey, string>> = {
     "profiles.mode.full": "Полный туннель",
     "profiles.mode.split": "Split routes",
     "profiles.delete": "Удалить",
+    "profiles.routingTitle": "Маршруты и туннель",
+    "profiles.routingBody":
+      "Какие сети идут через VPN, определяет поле AllowedIPs в импортированном .conf — именно оно попадает в WireGuard при подключении.",
+    "profiles.routingModesHint":
+      "Метка «Полный туннель» / «Split routes» хранится в профиле для наглядности. Сейчас маршруты в ОС задаёт AllowedIPs из конфига; при смене режима в интерфейсе содержимое .conf не меняется автоматически.",
+    "profiles.routingAllowedIps": "AllowedIPs",
+    "onboarding.title": "Добро пожаловать в WirePN",
+    "onboarding.uac":
+      "Приложение запрашивает права администратора: без них WireGuard не сможет поднять туннель в Windows.",
+    "onboarding.import":
+      "Добавьте профиль на вкладке «Профили»: вставьте текст .conf или выберите файл с сервера.",
+    "onboarding.links": "Документация и установщики:",
+    "onboarding.readme": "README на GitHub",
+    "onboarding.releases": "Релизы",
+    "onboarding.dismiss": "Понятно",
     "settings.title": "Настройки",
     "settings.desc": "Поведение приложения и интерфейса.",
     "settings.startWithWindows": "Запускать вместе с Windows",
@@ -219,6 +255,16 @@ const dict: Record<UiLanguage, Record<I18nKey, string>> = {
       "Версии не пришли из процесса приложения. Перезапустите после сборки: npm run build, или обновите установщик.",
     "settings.copySupportInfo": "Скопировать сведения",
     "settings.copied": "Скопировано",
+    "settings.updatesTitle": "Обновления",
+    "settings.updatesDesc":
+      "Проверка последнего релиза на GitHub (без автоустановки). Установщик скачивается вручную.",
+    "settings.updatesCheck": "Проверить обновления",
+    "settings.updatesChecking": "Проверка…",
+    "settings.updatesCurrent": "Текущая версия",
+    "settings.updatesAvailable": "Доступна новая версия",
+    "settings.updatesNone": "У вас уже последняя версия (или не удалось сравнить номера).",
+    "settings.updatesError": "Не удалось проверить",
+    "settings.updatesDownload": "Скачать релиз",
     "logs.title": "Журнал",
     "logs.desc": "События подключения и диагностика. Можно скопировать целиком для отчёта.",
     "logs.entries": "записей",
@@ -305,6 +351,21 @@ const dict: Record<UiLanguage, Record<I18nKey, string>> = {
     "profiles.mode.full": "Full tunnel",
     "profiles.mode.split": "Split routes",
     "profiles.delete": "Delete",
+    "profiles.routingTitle": "Routing and tunnel",
+    "profiles.routingBody":
+      "Which traffic uses the VPN is determined by AllowedIPs in your imported .conf — that value is what WireGuard applies when you connect.",
+    "profiles.routingModesHint":
+      "The Full tunnel / Split routes label is stored on the profile for clarity. Routes in Windows still follow AllowedIPs from the config; switching the label here does not rewrite your .conf automatically.",
+    "profiles.routingAllowedIps": "AllowedIPs",
+    "onboarding.title": "Welcome to WirePN",
+    "onboarding.uac":
+      "The app asks for administrator rights — WireGuard needs them to bring up a tunnel on Windows.",
+    "onboarding.import":
+      "Add a profile under Profiles: paste .conf text or pick a file from your server.",
+    "onboarding.links": "Docs and installers:",
+    "onboarding.readme": "README on GitHub",
+    "onboarding.releases": "Releases",
+    "onboarding.dismiss": "Got it",
     "settings.title": "Settings",
     "settings.desc": "Application and interface behavior.",
     "settings.startWithWindows": "Start with Windows",
@@ -334,6 +395,16 @@ const dict: Record<UiLanguage, Record<I18nKey, string>> = {
       "Version info did not arrive from the app process. Rebuild and restart (npm run build) or reinstall.",
     "settings.copySupportInfo": "Copy support info",
     "settings.copied": "Copied",
+    "settings.updatesTitle": "Updates",
+    "settings.updatesDesc":
+      "Check the latest GitHub release (no auto-install). Download the installer manually.",
+    "settings.updatesCheck": "Check for updates",
+    "settings.updatesChecking": "Checking…",
+    "settings.updatesCurrent": "Current version",
+    "settings.updatesAvailable": "A newer version is available",
+    "settings.updatesNone": "You are up to date (or version compare was inconclusive).",
+    "settings.updatesError": "Check failed",
+    "settings.updatesDownload": "Open release download",
     "logs.title": "Logs",
     "logs.desc": "Connection events and diagnostics. You can copy all entries for reports.",
     "logs.entries": "entries",
@@ -347,7 +418,81 @@ const dict: Record<UiLanguage, Record<I18nKey, string>> = {
   }
 };
 
+const runtimeErrRu: Record<string, string> = {
+  [RuntimeErrorCode.NO_PROFILE_SELECTED]: "Профиль не выбран.",
+  [RuntimeErrorCode.MISSING_WIREGUARD_GO]:
+    "Не найден wireguard-go.exe. Положите файл в папку из второй строки ниже; см. runtime/bin/README.txt.",
+  [RuntimeErrorCode.MISSING_WINTUN]:
+    "Не найден wintun.dll. Положите файл в папку из второй строки ниже; см. wintun.net.",
+  [RuntimeErrorCode.WINTUN_ADMIN]:
+    "Нужны права администратора: Wintun не может создать адаптер. Запустите WirePN от имени администратора. В режиме разработки запустите терминал или IDE с правами администратора.",
+  [RuntimeErrorCode.UAPI_PIPE_OWNER]:
+    "Не удалось открыть UAPI pipe WireGuard (ошибка владельца). Пересоберите wireguard-go скриптом scripts/fetch-runtime.ps1 или запустите приложение с правами администратора.",
+  [RuntimeErrorCode.WG_GO_EARLY_EXIT]: "Процесс wireguard-go завершился до готовности туннеля (код выхода на второй строке).",
+  [RuntimeErrorCode.UAPI_PIPE_NOT_READY]: "Pipe UAPI WireGuard не готов. Подробности на второй строке.",
+  [RuntimeErrorCode.UAPI_SET_TIMEOUT]: "Таймаут при настройке UAPI (set).",
+  [RuntimeErrorCode.UAPI_SET_FAILED]: "Ошибка UAPI при настройке (set). Подробности на второй строке.",
+  [RuntimeErrorCode.UAPI_CLOSED_NO_ERRNO]: "Соединение UAPI закрыто без ответа errno.",
+  [RuntimeErrorCode.UAPI_GET_TIMEOUT]: "Таймаут при чтении статистики UAPI (get).",
+  [RuntimeErrorCode.TUNNEL_ROUTE_DENIED]:
+    "Windows не дала добавить маршруты или DNS (нужны права администратора). Иначе туннель может быть без нужных маршрутов. Подробности ниже.",
+  [RuntimeErrorCode.TUNNEL_ROUTE_DUPLICATE]: "Конфликт маршрута при настройке туннеля. Подробности ниже.",
+  [RuntimeErrorCode.TUNNEL_ADAPTER_NOT_FOUND]: "Не найден адаптер Wintun (ошибка 1168). Подробности ниже.",
+  [RuntimeErrorCode.TUNNEL_POWERSHELL_FAILED]: "Ошибка PowerShell при настройке туннеля. Подробности ниже.",
+  [RuntimeErrorCode.PROFILE_NOT_FOUND]: "Профиль не найден.",
+  [RuntimeErrorCode.WG_PROCESS_EXITED]: "Процесс WireGuard завершился. Код на второй строке."
+};
+
+const runtimeErrEn: Record<string, string> = {
+  [RuntimeErrorCode.NO_PROFILE_SELECTED]: "No profile selected.",
+  [RuntimeErrorCode.MISSING_WIREGUARD_GO]:
+    "wireguard-go.exe not found. Place it in the folder on the second line below; see runtime/bin/README.txt.",
+  [RuntimeErrorCode.MISSING_WINTUN]: "wintun.dll not found. Place it in the folder on the second line below; see wintun.net.",
+  [RuntimeErrorCode.WINTUN_ADMIN]:
+    "Administrator rights are required: Wintun cannot create the adapter. Run WirePN as administrator. For development, run your terminal or IDE elevated.",
+  [RuntimeErrorCode.UAPI_PIPE_OWNER]:
+    "Could not open the WireGuard UAPI pipe (ownership error). Rebuild wireguard-go with scripts/fetch-runtime.ps1 or run the app as administrator.",
+  [RuntimeErrorCode.WG_GO_EARLY_EXIT]: "wireguard-go exited before the tunnel was ready (exit code on the second line).",
+  [RuntimeErrorCode.UAPI_PIPE_NOT_READY]: "WireGuard UAPI pipe is not ready. Details on the second line.",
+  [RuntimeErrorCode.UAPI_SET_TIMEOUT]: "Timeout while configuring WireGuard UAPI (set).",
+  [RuntimeErrorCode.UAPI_SET_FAILED]: "WireGuard UAPI configuration failed (set). Details on the second line.",
+  [RuntimeErrorCode.UAPI_CLOSED_NO_ERRNO]: "UAPI connection closed without an errno response.",
+  [RuntimeErrorCode.UAPI_GET_TIMEOUT]: "Timeout while reading WireGuard UAPI stats (get).",
+  [RuntimeErrorCode.TUNNEL_ROUTE_DENIED]:
+    "Windows blocked adding routes or DNS (administrator rights may be required). Traffic may bypass the tunnel. Details below.",
+  [RuntimeErrorCode.TUNNEL_ROUTE_DUPLICATE]: "Route conflict while configuring the tunnel. Details below.",
+  [RuntimeErrorCode.TUNNEL_ADAPTER_NOT_FOUND]: "Wintun adapter not found (error 1168). Details below.",
+  [RuntimeErrorCode.TUNNEL_POWERSHELL_FAILED]: "PowerShell error while configuring the tunnel. Details below.",
+  [RuntimeErrorCode.PROFILE_NOT_FOUND]: "Profile not found.",
+  [RuntimeErrorCode.WG_PROCESS_EXITED]: "WireGuard process exited. Code on the second line."
+};
+
+const runtimeErrByLang: Record<UiLanguage, Record<string, string>> = {
+  ru: runtimeErrRu,
+  en: runtimeErrEn
+};
+
 export const t = (lang: UiLanguage, key: I18nKey): string => dict[lang][key];
+
+/** Map main-process WIREPN_RUNTIME:* errors to the UI language; pass through unknown messages. */
+export const mapRuntimeErrorString = (lang: UiLanguage, raw: string): string => {
+  const lines = raw.split("\n");
+  const code = lines[0]?.trim() ?? "";
+  if (!code.startsWith("WIREPN_RUNTIME:")) {
+    return raw;
+  }
+  const translated = runtimeErrByLang[lang][code] ?? runtimeErrByLang.en[code];
+  if (!translated) {
+    return raw;
+  }
+  const rest = lines.slice(1).join("\n").trim();
+  return rest ? `${translated}\n\n${rest}` : translated;
+};
+
+export const mapRuntimeError = (lang: UiLanguage, err: unknown): string => {
+  const raw = err instanceof Error ? err.message : String(err);
+  return mapRuntimeErrorString(lang, raw);
+};
 
 const wirepnImportErrorCodes = [
   "zod_name",

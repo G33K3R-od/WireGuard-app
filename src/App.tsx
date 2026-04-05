@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { AppSettings } from "../electron/core/settingsStore";
 import type { RuntimePaths } from "../electron/core/runtimeManager";
 import type { HealthReport, LogEntry, RuntimeState, VpnProfile } from "../electron/shared/types";
+import { OnboardingModal } from "./components/OnboardingModal";
 import { ConnectPage } from "./pages/ConnectPage";
 import { ProfilesPage } from "./pages/ProfilesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { LogsPage } from "./pages/LogsPage";
-import { statusText, t } from "./i18n";
+import { mapRuntimeError, statusText, t } from "./i18n";
 
 type TabId = "connect" | "profiles" | "settings" | "logs";
 
@@ -63,7 +64,8 @@ export function App() {
     autoReconnect: true,
     theme: "light",
     language: "ru",
-    debug: false
+    debug: false,
+    onboardingDone: true
   });
   const [health, setHealth] = useState<HealthReport | null>(null);
   const [runtimePaths, setRuntimePaths] = useState<RuntimePaths | null>(null);
@@ -81,7 +83,7 @@ export function App() {
       setHealth(nextHealth);
       setError("");
     } catch (e) {
-      setError(String(e));
+      setError(mapRuntimeError(lang, e));
       try {
         setHealth(await window.wirepn.health());
       } catch {
@@ -108,7 +110,7 @@ export function App() {
       setRuntimePaths(nextPaths);
       setError("");
     } catch (e) {
-      setError(String(e));
+      setError(mapRuntimeError(lang, e));
       try {
         setHealth(await window.wirepn.health());
       } catch {
@@ -193,6 +195,15 @@ export function App() {
 
   return (
     <div className="app-shell">
+      {!settings.onboardingDone ? (
+        <OnboardingModal
+          lang={lang}
+          onDismiss={async () => {
+            const updated = await window.wirepn.setSettings({ onboardingDone: true });
+            setSettings(updated);
+          }}
+        />
+      ) : null}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-logo">WP</div>
@@ -258,7 +269,7 @@ export function App() {
                 setState(next);
                 await refreshAll();
               } catch (e) {
-                setError(String(e));
+                setError(mapRuntimeError(lang, e));
               }
             }}
             onDisconnect={async () => {
@@ -273,7 +284,7 @@ export function App() {
                 setState(next);
                 await refreshAll();
               } catch (e) {
-                setError(String(e));
+                setError(mapRuntimeError(lang, e));
               }
             }}
           />

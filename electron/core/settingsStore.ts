@@ -8,6 +8,8 @@ export interface AppSettings {
   theme: "light" | "system" | "dark";
   language: "ru" | "en";
   debug: boolean;
+  /** First-launch welcome; omitted in old `settings.json` → treated as already seen (migration). */
+  onboardingDone: boolean;
 }
 
 const DEFAULTS: AppSettings = {
@@ -15,7 +17,8 @@ const DEFAULTS: AppSettings = {
   autoReconnect: true,
   theme: "light",
   language: "ru",
-  debug: false
+  debug: false,
+  onboardingDone: false
 };
 
 export class SettingsStore {
@@ -31,10 +34,15 @@ export class SettingsStore {
 
   private load(): void {
     if (!existsSync(this.filePath)) {
+      this.value = { ...DEFAULTS };
       this.save();
       return;
     }
-    this.value = { ...DEFAULTS, ...(JSON.parse(readFileSync(this.filePath, "utf-8")) as AppSettings) };
+    const raw = JSON.parse(readFileSync(this.filePath, "utf-8")) as Record<string, unknown>;
+    this.value = { ...DEFAULTS, ...raw } as AppSettings;
+    if (!("onboardingDone" in raw)) {
+      this.value.onboardingDone = true;
+    }
   }
 
   private save(): void {

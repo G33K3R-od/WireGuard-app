@@ -2,6 +2,7 @@ import { app, safeStorage } from "electron";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ProfileMode, VpnProfile } from "../shared/types";
+import { RuntimeErrorCode, runtimeError } from "../shared/runtimeErrorCodes";
 import { buildWireguardConfFile, parseWireguardConf } from "./confParser";
 
 interface ProfileDb {
@@ -87,7 +88,7 @@ export class ProfileStore {
   setActiveProfile(profileId: string): VpnProfile {
     const profile = this.db.profiles.find((p) => p.id === profileId);
     if (!profile) {
-      throw new Error("Profile not found");
+      throw runtimeError(RuntimeErrorCode.PROFILE_NOT_FOUND);
     }
     this.db.activeProfileId = profileId;
     this.save();
@@ -97,7 +98,7 @@ export class ProfileStore {
   setProfileMode(profileId: string, mode: ProfileMode): VpnProfile {
     const profile = this.db.profiles.find((p) => p.id === profileId);
     if (!profile) {
-      throw new Error("Profile not found");
+      throw runtimeError(RuntimeErrorCode.PROFILE_NOT_FOUND);
     }
     profile.mode = mode;
     this.save();
@@ -115,7 +116,7 @@ export class ProfileStore {
   exportConf(profileId: string): string {
     const profile = this.db.profiles.find((p) => p.id === profileId);
     if (!profile) {
-      throw new Error("Profile not found");
+      throw runtimeError(RuntimeErrorCode.PROFILE_NOT_FOUND);
     }
     const priv = this.decrypt(profile.privateKeyEncrypted);
     return buildWireguardConfFile(profile, priv);

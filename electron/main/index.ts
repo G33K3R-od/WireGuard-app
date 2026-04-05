@@ -6,6 +6,12 @@ if (process.platform === "win32") {
   app.setAppUserModelId("ru.wirepn.client");
 }
 
+/** Only one WirePN process (window + tray + tunnel state). */
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+  process.exit(0);
+}
+
 const resolveUnderBuild = (...name: string[]): string => {
   const fromApp = join(app.getAppPath(), "build", ...name);
   if (existsSync(fromApp)) {
@@ -39,10 +45,21 @@ import { LogStore } from "../core/logStore";
 import { ProfileStore } from "../core/profileStore";
 import { RuntimeManager, getRuntimePaths } from "../core/runtimeManager";
 import { SettingsStore } from "../core/settingsStore";
+import { checkGitHubLatestRelease } from "../core/updateCheck";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+
+app.on("second-instance", () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
 
 /** Layout is fixed-band; do not allow fullscreen or growing past this size. */
 const MAIN_WINDOW_WIDTH = 1100;
@@ -208,6 +225,22 @@ const registerIpc = (): void => {
     app.setLoginItemSettings({ openAtLogin: updated.startWithWindows });
     refreshTrayMenu();
     return updated;
+  });
+
+  ipcMain.handle("updates:check", async () => checkGitHubLatestRelease(app.getVersion().trim()));
+
+  ipcMain.handle("app:open-external", async (_, url: unknown) => {
+    if (typeof url !== "string" || !url.trim()) {
+      return;
+    }
+    try {
+      const u = new URL(url.trim());
+      if (u.protocol === "https:" || u.protocol === "http:") {
+        await shell.openExternal(u.href);
+      }
+    } catch {
+      /* ignore invalid URL */
+    }
   });
 };
 

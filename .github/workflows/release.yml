@@ -46,6 +46,35 @@ jobs:
           npm run build
           npx electron-builder --win nsis --publish never
 
+      - name: Sign executables with Authenticode (optional)
+        shell: pwsh
+        env:
+          PFX_B64: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
+          PFX_PASS: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:PFX_B64)) {
+            Write-Host "WINDOWS_CERTIFICATE_PFX not set — skipping code signing."
+            exit 0
+          }
+          if ([string]::IsNullOrWhiteSpace($env:PFX_PASS)) {
+            Write-Error "Set WINDOWS_CERTIFICATE_PASSWORD when WINDOWS_CERTIFICATE_PFX is configured."
+            exit 1
+          }
+          $certPath = Join-Path $env:RUNNER_TEMP "wirepn-sign.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String($env:PFX_B64))
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $signtool) { throw "signtool.exe not found (install Windows SDK on runner)" }
+          $toSign = [System.Collections.Generic.HashSet[string]]::new()
+          $unpacked = "release/win-unpacked/WirePN.exe"
+          if (Test-Path $unpacked) { [void]$toSign.Add((Resolve-Path $unpacked).Path) }
+          Get-ChildItem -Path release -Filter "*.exe" -File -ErrorAction SilentlyContinue | ForEach-Object { [void]$toSign.Add($_.FullName) }
+          foreach ($f in $toSign) {
+            Write-Host "Signing: $f"
+            & $signtool sign /f $certPath /p $env:PFX_PASS /fd sha256 /tr http://timestamp.digicert.com /td sha256 $f
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
       - name: List release directory
         shell: pwsh
         run: |

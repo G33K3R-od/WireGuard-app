@@ -1,6 +1,6 @@
 {
   "name": "wirepn-windows",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "private": false,
   "description": "WirePN Windows client",
   "main": "out/main/index.js",

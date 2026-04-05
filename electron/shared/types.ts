@@ -60,3 +60,13 @@ export interface PingResult {
   ms?: number;
   error?: string;
 }
+
+/** Result of `GET .../releases/latest` vs `app.getVersion()`. */
+export interface UpdateCheckResult {
+  ok: boolean;
+  updateAvailable: boolean;
+  currentVersion: string;
+  latestVersion?: string;
+  releaseUrl?: string;
+  error?: string;
+}

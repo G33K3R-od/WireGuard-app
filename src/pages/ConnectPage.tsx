@@ -3,7 +3,7 @@ import type { RuntimePaths } from "../../electron/core/runtimeManager";
 import type { HealthReport, PingResult, RuntimeState, TunnelStats, VpnProfile } from "../../electron/shared/types";
 import { formatBytes, formatConnectedDuration, formatHandshake } from "../connectUi";
 import type { UiLanguage } from "../i18n";
-import { statusText, t } from "../i18n";
+import { mapRuntimeErrorString, mapRuntimeError, statusText, t } from "../i18n";
 import { GITHUB_RELEASES_URL } from "../urls";
 
 interface Props {
@@ -57,7 +57,7 @@ export function ConnectPage({ lang, showDebug, state, profile, health, runtimePa
       const r = await window.wirepn.pingEndpoint(profile?.id);
       setPingResult(r);
     } catch (e) {
-      setPingResult({ ok: false, host: "", error: String(e) });
+      setPingResult({ ok: false, host: "", error: mapRuntimeError(lang, e) });
     } finally {
       setPingBusy(false);
     }
@@ -118,7 +118,9 @@ export function ConnectPage({ lang, showDebug, state, profile, health, runtimePa
           {status === "error" && state?.message ? (
             <div className="alert alert-error" style={{ marginTop: 16 }}>
               <strong>{t(lang, "connect.errorTitle")}</strong>
-              <p style={{ marginBottom: 0, marginTop: 8, whiteSpace: "pre-wrap" }}>{state.message}</p>
+              <p style={{ marginBottom: 0, marginTop: 8, whiteSpace: "pre-wrap" }}>
+                {mapRuntimeErrorString(lang, state.message)}
+              </p>
             </div>
           ) : null}
 
@@ -145,7 +147,7 @@ export function ConnectPage({ lang, showDebug, state, profile, health, runtimePa
 
           {state?.message && status !== "error" ? (
             <p className="muted" style={{ marginTop: 16, marginBottom: 0 }}>
-              {state.message}
+              {mapRuntimeErrorString(lang, state.message)}
             </p>
           ) : null}
 
